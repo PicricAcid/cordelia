@@ -17,7 +17,7 @@ t = Tokenizer()
 censor_file = "censor_data.json"
 censor_dic = {}
 
-admin_user_id = '2028'
+admin_user_id = 2028
 
 
 #-----文章生成関数群----------------------------------------------------
@@ -204,6 +204,7 @@ class MyStreamListener(StreamListener):
 if __name__ == "__main__":
     if os.path.exists(dict_file):
         dic = json.load(open(dict_file, "r"))
+        print("ready")
 
     mastodon = Mastodon(
         client_id="my_clientcred_workers.txt",
