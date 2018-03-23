@@ -1,25 +1,37 @@
 #---Streaming Get-------------
 import html
 from mastodon import Mastodon, StreamListener
-from janome.tokenizer import Tokenizer
+import MeCab
 import json, os, re, random
 import re
 
 dict_file = "test.json"
 dic = {}
-t = Tokenizer()
 
 if os.path.exists(dict_file):
     dic = json.load(open(dict_file, "r"))
 
 
+def mecab_analisys(text):
+    tagger = MeCab.Tagger('-Ochasen')
+    tagger.parse("")
+    result = tagger.parseToNode(text)
+
+    word_class = []
+    while result:
+        word = result.surface
+        clazz = result.feature.split(',')[0]
+        if clazz != u'BOS/EOS':
+            word_class.append((word, clazz))
+        result = result.next
+
+    return word_class
+
 def register_dic(words):
     global dic
-    if len(words) == 0:
-        return
     tmp = ["!"]
-    for token in words:
-        word = token.surface
+    for w in words:
+        word = w[0]
         if word == "" or word == "\r\n" or word == "\n":
             continue
         tmp.append(word)
@@ -88,7 +100,7 @@ class MyStreamListener(StreamListener):
         if content[-1] != "。":
             content += "。"
 
-        words = t.tokenize(content)
+        words = mecab_analisys(content)
         register_dic(words)
 
 

@@ -1,17 +1,17 @@
 #coding: utf-8
 
 import html
-from janome.tokenizer import Tokenizer
+import MeCab
 import json, os, re, random
 import re
 from mastodon import Mastodon, StreamListener
+from types import *
 
 censorship_command = re.compile(r'^コーデリア\s禁止用語')
 
 #学習辞書
 dict_file = "dict.json"
 dic = {}
-t = Tokenizer()
 
 #禁止用語辞書
 censor_file = "censor_data.json"
@@ -21,18 +21,26 @@ admin_user_id = 2028
 
 
 #-----文章生成関数群----------------------------------------------------
+def mecab_analisys(text):
+    tagger = MeCab.Tagger('-Ochasen')
+    tagger.parse("")
+    result = tagger.parseToNode(text)
 
-def analisys(text):
-    malist = t.tokenize(text)
-    return malist
+    word_class = []
+    while result:
+        word = result.surface
+        clazz = result.feature.split(',')[0]
+        if clazz != u'BOS/EOS':
+            word_class.append((word, clazz))
+        result = result.next
+
+    return word_class
 
 def register_dic(words):
     global dic
-    if len(words) == 0:
-        return
     tmp = ["!"]
-    for token in words:
-        word = token.surface
+    for w in words:
+        word = w[0]
         if word == "" or word == "\r\n" or word == "\n":
             continue
         tmp.append(word)
@@ -85,12 +93,15 @@ def word_choice(sel):
 def make_reply(text):
     if text[-1] != "。":
         text += "。"
-    words = t.tokenize(text)
+
+    words = mecab_analisys(text)
     #register_dic(words)
 
     for w in words:
-        face = w.surface
-        ps = w.part_of_speech.split(',')[0]
+        face = w[0]
+        print(face)
+        ps = w[1]
+        print(ps)
         if ps == "感動詞":
             return face + "。"
         if ps == "名詞" or ps == "形容詞":
@@ -162,6 +173,7 @@ def default_analisys(status):
 
     #禁止用語の設定
     if censorship_command.match(reply_text):
+        print(status['account']['id'])
         if(status['account']['id'] == admin_user_id):
             listen_func_check(status)
         else:
